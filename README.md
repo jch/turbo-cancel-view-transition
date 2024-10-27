@@ -1,3 +1,4 @@
 # Preventing default user-agent view transitions with Turbo
 
-See [index.html](./index.html)
+https://jch.github.io/turbo-cancel-view-transition/
+
