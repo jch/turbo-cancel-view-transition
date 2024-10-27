@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://cdn.jsdelivr.net/npm/@hotwired/turbo@8.0.12/dist/turbo.es2017-umd.min.js"></script>
+    <style>
+      ::view-transition-group(root) {
+        animation-duration: 1s;
+      }
+    </style>
+    <script>
+      // 1. Register for swipe navigation events, annotate `html`
+      window.addEventListener('touchend', () => document.documentElement.setAttribute('data-jch-navigate-touch', true));
+      window.addEventListener('touchcancel', () => document.documentElement.setAttribute('data-jch-navigate-touch', true));
+      window.addEventListener('wheel', () => document.documentElement.setAttribute('data-jch-navigate-touch', true));  // Mac two finger swipe
+      document.addEventListener('turbo:visit', (event) => {
+        document.documentElement.setAttribute('data-turbo-visit-action', event.detail.action);
+      });
+
+      // 2. `turbo:before-cache` removes <meta name=‘view-transition’ … /> on the current page to disable view transition
+      // Comment out to see the double animation
+      document.addEventListener('xturbo:before-cache', (event) => {
+        const action = document.documentElement.getAttribute('data-turbo-visit-action');
+        const touch = document.documentElement.getAttribute('data-jch-navigate-touch');
+        if (action === 'restore' && touch) {
+          console.log('turbo:before-cache removing view-transition meta tag');
+          document.documentElement.querySelector("meta[name='view-transition']").remove();
+        }
+      });
+
+      // 3. `turbo:load` clean up annotations
+      document.addEventListener('turbo:load', () => {
+        document.documentElement.removeAttribute('data-turbo-visit-action');
+        document.documentElement.removeAttribute('data-jch-navigate-touch');
+      });
+    </script>
+  </head>
+  <meta name="view-transition" content="same-origin">
+  <body>
+    <h1>Preventing default user-agent view transitions with Turbo</h1>
+    <p>View transitions landed in Safari 18. However, the default swipe animation for back/forward navigation cannot be disabled.</p>
+    <p>This causes a double animation. <strong><a href="forward.html">For an example, click here, then swipe back.</a></strong></p>
+    <img src="double-animation.gif" alt="Navigate forward/back shows default iOS animation, and 2nd flash animation from view transition" width="296px" height="640px" style="border: 1px solid black"/>
+
+    <h2>Preventing view transition animations with Turbo</h2>
+    <p>WICG has a <a href="https://github.com/WICG/view-transitions/blob/main/default-ua-transitions.md">proposal "Default UA transitions"</a> to address this.</p>
+    <p>Turbo can prevent custom animations in favor of the default animation.</p>
+    <ol>
+      <li>Register for swipe navigation events, annotate `html`</li>
+      <li>`turbo:visit` annotates `action` so I know when it's a `restore`</li>
+      <li>`turbo:before-cache` removes <meta name=‘view-transition’ … /> on the current page to disable view transition</li>
+      <li>`turbo:load` clean up annotations</li>
+    </ol>
+
+    <h2>Code</h2>
+    <pre><code>
+    // 1. Register for swipe navigation events, annotate `html`
+    window.addEventListener('touchend', () => document.documentElement.setAttribute('data-jch-navigate-touch', true));
+    window.addEventListener('touchcancel', () => document.documentElement.setAttribute('data-jch-navigate-touch', true));
+    window.addEventListener('wheel', () => document.documentElement.setAttribute('data-jch-navigate-touch', true));  // Mac two finger swipe
+    document.addEventListener('turbo:visit', (event) => {
+      document.documentElement.setAttribute('data-turbo-visit-action', event.detail.action);
+    });
+
+    // 2. `turbo:before-cache` removes <meta name=‘view-transition’ … /> on the current page to disable view transition
+    // Comment out to see the double animation
+    document.addEventListener('turbo:before-cache', (event) => {
+      const action = document.documentElement.getAttribute('data-turbo-visit-action');
+      const touch = document.documentElement.getAttribute('data-jch-navigate-touch');
+      if (action === 'restore' && touch) {
+        console.log('turbo:before-cache removing view-transition meta tag');
+        document.documentElement.querySelector("meta[name='view-transition']").remove();
+      }
+    });
+
+    // 3. `turbo:load` clean up annotations
+    document.addEventListener('turbo:load', () => {
+      document.documentElement.removeAttribute('data-turbo-visit-action');
+      document.documentElement.removeAttribute('data-jch-navigate-touch');
+    });
+    </code></pre>
+
+    <h2>Resources</h2>
+    <p>This has been tested with the latest turbo as of this writing turbo@8.0.12</p>
+    <ul>
+      <li><a href="https://developer.chrome.com/docs/web-platform/view-transitions">Chrome for Developers: Smooth transitions with the View Transition API</a></li>
+      <li><a href="https://developer.mozilla.org/en-US/docs/Web/API/View_Transitions_API">MDN: View Transitions API</a></li>
+      <li><a href="https://turbo.hotwired.dev/handbook/drive#view-transitions">Turbo Handbook: View Transitions</a></li>
+      <li><a href="https://turbo.hotwired.dev/reference/events#document">Turbo Events Reference</a></li>
+      <li><a href="https://jch.app">jch.app: Application with slide forward/back animations</a></li>
+    </ul>
+  </body>
+</html>
